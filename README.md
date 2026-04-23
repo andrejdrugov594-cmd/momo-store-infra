@@ -1,72 +1,45 @@
-# Дипломный проект: Momo Store (пельменная NK)
+# Momo Store aka Пельменная №2
 
-Этот проект представляет собой полноценную инфраструктуру CI/CD для приложения "Momo Store", реализованную в рамках обучения DevOps.
+<img width="900" alt="image" src="https://user-images.githubusercontent.com/9394918/167876466-2c530828-d658-4efe-9064-825626cc6db5.png">
+
+## Frontend
+
+```bash
+npm install
+NODE_ENV=production VUE_APP_API_URL=http://localhost:8081 npm run serve
+```
+
+## Backend
+
+```bash
+go run ./cmd/api
+go test -v ./...
+```
+
+---
+
+# Дипломный проект: Инфраструктура Momo Store
+
+Этот проект включает полную настройку CI/CD, IaC и оркестрации для приложения Momo Store.
 
 ## Состав репозитория
 
-- `backend/`: Исходный код бэкенда на Go.
-- `frontend/`: Исходный код фронтенда на Vue.js.
-- `infrastructure/`: Конфигурация инфраструктуры.
-  - `terraform/`: Манифесты для развертывания ресурсов в Yandex Cloud.
-  - `helm/`: Helm-чарт для публикации приложения в Kubernetes.
-- `.gitlab-ci.yml`: Описание пайплайна сборки, тестирования и доставки.
+- `backend/`: Бэкенд на Go + Dockerfile.
+- `frontend/`: Фронтенд на Vue.js + Dockerfile.
+- `infrastructure/`:
+  - `terraform/`: Ресурсы Yandex Cloud (K8s, VPC, S3, Registry).
+  - `helm/`: Чарт для деплоя в Kubernetes.
+- `.gitlab-ci.yml`: CI/CD пайплайн.
+- `VARIABLES.md`: Список всех переменных, необходимых для настройки.
 
-## Развертывание инфраструктуры
+## Инструкции
 
-Инфраструктура описывается с помощью Terraform и разворачивается в Yandex Cloud.
+Подробные инструкции по развертыванию и настройке переменных находятся в файлах `VARIABLES.md` и в разделах ниже.
 
-### Предварительные условия
+### Развертывание инфраструктуры (Terraform)
+1. Настройте переменные в `infrastructure/terraform/terraform.tfvars`.
+2. `terraform init && terraform apply`.
 
-1. Установленный Terraform.
-2. Аккаунт в Yandex Cloud с необходимыми правами.
-3. Созданный S3 bucket для хранения стейта Terraform (`momo-terraform-state`).
-
-### Инструкция по развертыванию
-
-1. Перейдите в директорию `infrastructure/terraform`.
-2. Создайте файл `terraform.tfvars` со следующими переменными:
-   ```hcl
-   yc_token           = "ВАШ_OAUTH_TOKEN"
-   yc_cloud_id        = "ВАШ_CLOUD_ID"
-   yc_folder_id       = "ВАШ_FOLDER_ID"
-   service_account_id = "ВАШ_SERVICE_ACCOUNT_ID"
-   ```
-3. Выполните команды:
-   ```bash
-   terraform init
-   terraform apply
-   ```
-
-## Развертывание приложения
-
-Приложение разворачивается в Kubernetes кластер с помощью Helm.
-
-### Настройка GitLab CI/CD
-
-Для работы пайплайна необходимо настроить следующие переменные в GitLab CI/CD (Settings -> CI/CD -> Variables):
-
-- `YC_TOKEN`: OAuth токен Yandex Cloud.
-- `NEXUS_URL`: URL вашего Nexus репозитория.
-- `NEXUS_USER`: Имя пользователя Nexus.
-- `NEXUS_PASSWORD`: Пароль Nexus.
-- `KUBECONFIG`: Содержимое файла конфигурации kubectl (для доступа к кластеру).
-
-### Релизный цикл и версионирование
-
-- **Versioning**: Мы используем Semantic Versioning (SemVer).
-- **Frontend/Backend**: Образы тегируются с использованием ветки и ID пайплайна (напр. `master-123`).
-- **Helm Chart**: Версия чарта инкрементируется автоматически в пайплайне на основе `CI_PIPELINE_ID`.
-- **Процесс**: Все изменения вносятся через Merge Request в ветку `master`. При слиянии в `master` автоматически запускается деплой в продакшн окружение.
-
-## Мониторинг и логирование
-
-В кластере Kubernetes рекомендуется развернуть стек Prometheus + Grafana для мониторинга и Loki + Promtail для сбора логов.
-Дашборды Grafana могут быть импортированы из стандартных шаблонов для Kubernetes и Go приложений.
-
-## Правила внесения изменений
-
-1. Создайте новую ветку от `master`.
-2. Внесите изменения в код или инфраструктуру.
-3. Убедитесь, что локальные тесты проходят (`go test ./...` для бэкенда).
-4. Создайте Merge Request.
-5. После ревью и прохождения CI проверок, MR может быть слит в `master`.
+### Развертывание приложения (Helm)
+1. Обновите `infrastructure/helm/momo-store/values.yaml` (хост, теги образов).
+2. `helm upgrade --install momo-store ./infrastructure/helm/momo-store`.
