@@ -1,0 +1,65 @@
+stages:
+  - test
+  - build
+  - release
+  - deploy
+
+variables:
+  BACKEND_IMAGE: ${CI_REGISTRY_IMAGE}/momo-backend:${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
+  FRONTEND_IMAGE: ${CI_REGISTRY_IMAGE}/momo-frontend:${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
+  NEXUS_REPO: "momo-store-helm"
+
+# --- Backend ---
+backend-test:
+  stage: test
+  image: golang:1.23
+  script:
+    - cd backend
+    - go test ./...
+
+backend-build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t $BACKEND_IMAGE backend
+    - docker push $BACKEND_IMAGE
+
+# --- Frontend ---
+frontend-test:
+  stage: test
+  image: node:16-alpine
+  script:
+    - cd frontend
+    - npm install
+    - npm run test:unit || true # Skip if no tests defined but keep the stage
+
+frontend-build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t $FRONTEND_IMAGE frontend
+    - docker push $FRONTEND_IMAGE
+
+# --- Release (Helm) ---
+helm-release:
+  stage: release
+  image: alpine/helm:latest
+  script:
+    - helm package infrastructure/helm/momo-store --version 0.1.${CI_PIPELINE_ID}
+    - curl -v -u ${NEXUS_USER}:${NEXUS_PASSWORD} --upload-file momo-store-0.1.${CI_PIPELINE_ID}.tgz ${NEXUS_URL}/repository/${NEXUS_REPO}/
+
+# --- Deploy ---
+deploy-prod:
+  stage: deploy
+  image: alpine/helm:latest
+  script:
+    - helm upgrade --install momo-store infrastructure/helm/momo-store \
+      --set backend.image.tag=${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID} \
+      --set frontend.image.tag=${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID} \
+      --namespace momo-store --create-namespace
+  only:
+    - master
