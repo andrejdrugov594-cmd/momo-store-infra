@@ -1,0 +1,17 @@
+backend:
+  image:
+    repository: momo-backend
+    tag: latest
+  service:
+    port: 8081
+
+frontend:
+  image:
+    repository: momo-frontend
+    tag: latest
+  service:
+    port: 80
+
+ingress:
+  enabled: true
+  host: momo-store.example.com
