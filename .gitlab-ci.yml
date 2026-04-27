@@ -8,6 +8,7 @@ variables:
   BACKEND_IMAGE: ${CI_REGISTRY_IMAGE}/momo-backend:${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
   FRONTEND_IMAGE: ${CI_REGISTRY_IMAGE}/momo-frontend:${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
   NEXUS_REPO: "momo-store-helm"
+  K8S_CLUSTER_ID: "cat6l13mdc445lgo27i6"
 
 # --- Backend ---
 backend-test:
@@ -23,6 +24,7 @@ backend-build:
   services:
     - docker:dind
   script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build -t $BACKEND_IMAGE backend
     - docker push $BACKEND_IMAGE
 
@@ -33,7 +35,7 @@ frontend-test:
   script:
     - cd frontend
     - npm install
-    - npm run test:unit || true # Skip if no tests defined but keep the stage
+    - npm run test:unit || true
 
 frontend-build:
   stage: build
@@ -41,6 +43,7 @@ frontend-build:
   services:
     - docker:dind
   script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build -t $FRONTEND_IMAGE frontend
     - docker push $FRONTEND_IMAGE
 
@@ -55,11 +58,17 @@ helm-release:
 # --- Deploy ---
 deploy-prod:
   stage: deploy
-  image: alpine/helm:latest
+  image: line/kubectl:latest
+  before_script:
+    - apk add --no-cache curl bash
+    - curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+    - export PATH=$PATH:/root/yandex-cloud/bin
+    - yc managed-kubernetes cluster get-credentials --id $K8S_CLUSTER_ID --external --token $YC_TOKEN
   script:
     - helm upgrade --install momo-store infrastructure/helm/momo-store \
       --set backend.image.tag=${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID} \
       --set frontend.image.tag=${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID} \
       --namespace momo-store --create-namespace
   only:
+    - main
     - master
