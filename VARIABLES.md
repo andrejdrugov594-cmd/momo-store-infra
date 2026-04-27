@@ -26,6 +26,7 @@
 | `NEXUS_USER` | Логин в Nexus. |
 | `NEXUS_PASSWORD` | Пароль в Nexus. |
 | `KUBECONFIG` | Содержимое файла конфигурации kubectl (base64 или файл). |
+| `MOMO_IMAGES_BASE_URL` | Базовый URL для статических изображений в S3. |
 
 ## 3. Helm Chart (values.yaml)
 Файл: `infrastructure/helm/momo-store/values.yaml`
