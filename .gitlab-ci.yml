@@ -8,10 +8,6 @@ variables:
   BACKEND_IMAGE: ${CI_REGISTRY_IMAGE}/momo-backend:${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
   FRONTEND_IMAGE: ${CI_REGISTRY_IMAGE}/momo-frontend:${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
   NEXUS_REPO: "momo-store-helm"
-  # Настройки для Docker-in-Docker
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
-  DOCKER_DRIVER: overlay2
 
 # --- Backend ---
 backend-test:
@@ -23,14 +19,14 @@ backend-test:
 
 backend-build:
   stage: build
-  image: docker:20.10.16
-  services:
-    - name: docker:20.10.16-dind
-      alias: docker
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
   script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $BACKEND_IMAGE backend
-    - docker push $BACKEND_IMAGE
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}/backend"
+      --dockerfile "${CI_PROJECT_DIR}/backend/Dockerfile"
+      --destination "${BACKEND_IMAGE}"
 
 # --- Frontend ---
 frontend-test:
@@ -43,14 +39,14 @@ frontend-test:
 
 frontend-build:
   stage: build
-  image: docker:20.10.16
-  services:
-    - name: docker:20.10.16-dind
-      alias: docker
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
   script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $FRONTEND_IMAGE frontend
-    - docker push $FRONTEND_IMAGE
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}/frontend"
+      --dockerfile "${CI_PROJECT_DIR}/frontend/Dockerfile"
+      --destination "${FRONTEND_IMAGE}"
 
 # --- Release (Helm) ---
 helm-release:
