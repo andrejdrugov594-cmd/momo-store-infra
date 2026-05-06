@@ -8,6 +8,10 @@ variables:
   BACKEND_IMAGE: ${CI_REGISTRY_IMAGE}/momo-backend:${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
   FRONTEND_IMAGE: ${CI_REGISTRY_IMAGE}/momo-frontend:${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}
   NEXUS_REPO: "momo-store-helm"
+  # Настройки для Docker-in-Docker
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
 
 # --- Backend ---
 backend-test:
@@ -19,9 +23,10 @@ backend-test:
 
 backend-build:
   stage: build
-  image: docker:latest
+  image: docker:20.10.16
   services:
-    - docker:dind
+    - name: docker:20.10.16-dind
+      alias: docker
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build -t $BACKEND_IMAGE backend
@@ -38,9 +43,10 @@ frontend-test:
 
 frontend-build:
   stage: build
-  image: docker:latest
+  image: docker:20.10.16
   services:
-    - docker:dind
+    - name: docker:20.10.16-dind
+      alias: docker
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build -t $FRONTEND_IMAGE frontend
