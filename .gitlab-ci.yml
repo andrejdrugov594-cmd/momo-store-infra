@@ -67,11 +67,9 @@ deploy-prod:
   before_script:
     - mkdir -p ~/.kube
     - echo "$KUBECONFIG" > ~/.kube/config
+    - chmod 600 ~/.kube/config
   script:
-    - helm upgrade --install momo-store infrastructure/helm/momo-store \
-      --set backend.image.tag=${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID} \
-      --set frontend.image.tag=${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID} \
-      --namespace momo-store --create-namespace
+    - helm upgrade --install momo-store infrastructure/helm/momo-store --set backend.image.tag=${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID} --set frontend.image.tag=${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID} --namespace momo-store --create-namespace
   only:
     - main
     - master
