@@ -23,6 +23,7 @@ kind: Service
 metadata:
   name: {{ include "momo-store.fullname" . }}-frontend
 spec:
+  type: {{ .Values.frontend.service.type | default "ClusterIP" }}
   ports:
     - port: {{ .Values.frontend.service.port }}
       targetPort: {{ .Values.frontend.service.port }}
